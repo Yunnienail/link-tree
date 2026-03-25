@@ -74,6 +74,24 @@
         setTimeout(() => setIsLoaded(true), 150);
       }, []);
 
+      // 處理 Deep Link 深度連結跳轉邏輯
+      const handleDeepLink = (e, url, deepLink) => {
+        if (!deepLink) return;
+        
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIgBrowser = /Instagram/i.test(navigator.userAgent);
+        
+        if (isMobile || isIgBrowser) {
+          e.preventDefault();
+          window.location.href = deepLink;
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.location.href = url;
+            }
+          }, 1500);
+        }
+      };
+
       const links = [
         {
           title: '官方 LINE 預約 / 諮詢',
@@ -93,6 +111,7 @@
           title: '客製化穿戴甲專區',
           subtitle: '@y.n.nail',
           url: 'https://instagram.com/y.n.nail',
+          deepLink: 'instagram://user?username=y.n.nail',
           icon: <Instagram strokeWidth={1.5} className="w-6 h-6" />,
           primary: false,
         },
@@ -111,14 +130,26 @@
         { name: 'Zoe', role: '美甲師', handle: '@manicurist.zoe', url: 'https://www.instagram.com/manicurist.zoe', deepLink: 'instagram://user?username=manicurist.zoe'}
       ];
 
+      // --- 獨立宣告樣式變數，避免 GitHub Pages 的 Jekyll 解析錯誤 ({{...}}) ---
+      const bgStyle = {
+        background: 'linear-gradient(160deg, #fef6f7 0%, #f6b8c1 35%, #f0899b 70%, #eb687c 100%)',
+        backgroundAttachment: 'fixed'
+      };
+
+      const titleStyle = { 
+        fontFamily: "'Alex Brush', cursive", 
+        fontSize: 'clamp(3rem, 17vw, 5.5rem)',
+        textShadow: '0px 2px 15px rgba(235,104,124,0.4), 0px 4px 4px rgba(0,0,0,0.05)' 
+      };
+
+      const subtitleStyle = { 
+        textShadow: '0 1px 3px rgba(0,0,0,0.15)' 
+      };
+
       return (
         <div 
           className="min-h-screen relative py-12 px-4 flex justify-center text-gray-800 overflow-x-hidden"
-          style={{
-            // 模擬圖片中的水彩漸層，從頂部的淡粉白到底部的深玫瑰粉
-            background: 'linear-gradient(160deg, #fef6f7 0%, #f6b8c1 35%, #f0899b 70%, #eb687c 100%)',
-            backgroundAttachment: 'fixed'
-          }}
+          style={bgStyle}
         >
           {/* 背景水彩暈染光暈，模擬筆刷的不均勻感 */}
           <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -131,20 +162,14 @@
             
             {/* Header 品牌視覺區塊 */}
             <header className="flex flex-col items-center text-center mt-6 w-full px-2">
-              {/* 替換字體為 Alex Brush，加入 clamp 自動縮放與強制不換行設定避免手機變兩行 */}
               <h1 
                 className="leading-none text-white tracking-normal drop-shadow-lg mb-2 whitespace-nowrap"
-                style={{ 
-                  fontFamily: "'Alex Brush', cursive", 
-                  fontSize: 'clamp(3rem, 17vw, 5.5rem)',
-                  textShadow: '0px 2px 15px rgba(235,104,124,0.4), 0px 4px 4px rgba(0,0,0,0.05)' 
-                }}
+                style={titleStyle}
               >
                 Yunnie Nail
               </h1>
               
-              {/* 副標題依照圖片改為白色、細體字、寬字距 */}
-              <p className="text-white text-[13px] tracking-[0.35em] font-light drop-shadow-md mb-8 ml-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+              <p className="text-white text-[13px] tracking-[0.35em] font-light drop-shadow-md mb-8 ml-1" style={subtitleStyle}>
                 凝膠美甲 · 手足保養 · 教學 · 霧眉
               </p>
 
@@ -181,41 +206,46 @@
 
             {/* 主要連結區塊 */}
             <main className="flex flex-col gap-4">
-              {links.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`group relative flex items-center p-4 rounded-3xl transition-all duration-300 transform hover:-translate-y-1.5 
-                    ${link.primary 
-                      ? 'bg-white/80 hover:bg-white shadow-[0_8px_20px_rgba(235,104,124,0.25)] hover:shadow-[0_12px_25px_rgba(235,104,124,0.35)] border border-white' 
-                      : 'bg-white/50 hover:bg-white/80 shadow-[0_4px_15px_rgba(235,104,124,0.1)] border border-white/60 hover:border-white/90'
-                    }
-                    backdrop-blur-lg overflow-hidden
-                  `}
-                  style={{ transitionDelay: `${index * 100}ms` }}
-                >
-                  <div className={`p-3 rounded-2xl mr-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3
-                    ${link.primary ? 'bg-pink-100 text-pink-600 shadow-inner' : 'bg-white/90 text-gray-700'}
-                  `}>
-                    {link.icon}
-                  </div>
-                  <div className="flex-1">
-                    <h2 className={`font-bold text-[15px] tracking-wide ${link.primary ? 'text-gray-800' : 'text-gray-800'}`}>
-                      {link.title}
-                    </h2>
-                    {link.subtitle && (
-                      <p className={`text-xs mt-1 font-medium tracking-wider ${link.primary ? 'text-pink-600' : 'text-gray-600'}`}>
-                        {link.subtitle}
-                      </p>
-                    )}
-                  </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-1 ${link.primary ? 'bg-pink-50' : 'bg-white/70'}`}>
-                    <ChevronRight className={`w-5 h-5 ${link.primary ? 'text-pink-500' : 'text-gray-500'}`} />
-                  </div>
-                </a>
-              ))}
+              {links.map((link, index) => {
+                // 獨立宣告動畫延遲樣式
+                const delayStyle = { transitionDelay: `${index * 100}ms` };
+                return (
+                  <a
+                    key={index}
+                    href={link.url}
+                    onClick={(e) => handleDeepLink(e, link.url, link.deepLink)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group relative flex items-center p-4 rounded-3xl transition-all duration-300 transform hover:-translate-y-1.5 
+                      ${link.primary 
+                        ? 'bg-white/80 hover:bg-white shadow-[0_8px_20px_rgba(235,104,124,0.25)] hover:shadow-[0_12px_25px_rgba(235,104,124,0.35)] border border-white' 
+                        : 'bg-white/50 hover:bg-white/80 shadow-[0_4px_15px_rgba(235,104,124,0.1)] border border-white/60 hover:border-white/90'
+                      }
+                      backdrop-blur-lg overflow-hidden
+                    `}
+                    style={delayStyle}
+                  >
+                    <div className={`p-3 rounded-2xl mr-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3
+                      ${link.primary ? 'bg-pink-100 text-pink-600 shadow-inner' : 'bg-white/90 text-gray-700'}
+                    `}>
+                      {link.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h2 className={`font-bold text-[15px] tracking-wide ${link.primary ? 'text-gray-800' : 'text-gray-800'}`}>
+                        {link.title}
+                      </h2>
+                      {link.subtitle && (
+                        <p className={`text-xs mt-1 font-medium tracking-wider ${link.primary ? 'text-pink-600' : 'text-gray-600'}`}>
+                          {link.subtitle}
+                        </p>
+                      )}
+                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-1 ${link.primary ? 'bg-pink-50' : 'bg-white/70'}`}>
+                      <ChevronRight className={`w-5 h-5 ${link.primary ? 'text-pink-500' : 'text-gray-500'}`} />
+                    </div>
+                  </a>
+                );
+              })}
             </main>
 
             {/* 團隊介紹區塊 */}
@@ -233,6 +263,7 @@
                   <a
                     key={index}
                     href={member.url}
+                    onClick={(e) => handleDeepLink(e, member.url, member.deepLink)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 hover:border-white/90 rounded-2xl p-4 transition-all duration-300 group shadow-[0_4px_15px_rgba(235,104,124,0.1)]"
