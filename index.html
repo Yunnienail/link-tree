@@ -74,33 +74,34 @@
         setTimeout(() => setIsLoaded(true), 150);
       }, []);
 
-      // 處理跳轉至外部瀏覽器邏輯 (Chrome / Safari)
+      // 處理跳轉邏輯：因應 iOS / Android 不同的生態系限制
       const handleExternalClick = (e, url) => {
         const ua = navigator.userAgent || navigator.vendor || window.opera;
         
-        // 偵測是否為社群軟體的內建瀏覽器 (IG, FB, LINE)
-        const isInAppBrowser = /Instagram|FBAV|FBAN|Line/i.test(ua);
+        const isInAppBrowser = /Instagram|FBAV|FBAN/i.test(ua);
+        const isLineBrowser = /Line/i.test(ua);
         const isAndroid = /android/i.test(ua);
+        const isIOS = /iPad|iPhone|iPod/i.test(ua);
 
-        if (isInAppBrowser) {
-          e.preventDefault(); // 阻止原本的超連結點擊行為，準備接管
-          
+        if (isInAppBrowser || isLineBrowser) {
           if (isAndroid) {
-            // Android 系統：利用 intent 協議強制喚醒系統預設瀏覽器 (例如 Chrome)
+            // Android 系統：利用 intent 協議完美跳脫。交給手機系統決定用 Chrome 還是 APP (LINE/蝦皮) 打開
+            e.preventDefault(); 
             const cleanUrl = url.replace(/^https?:\/\//, '');
-            window.location.href = `intent://${cleanUrl}#Intent;scheme=https;end`;
-          } else {
-            // iOS 系統處理
-            if (/Line/i.test(ua)) {
-              // LINE 專屬的外部瀏覽器參數
+            // 加上 S.browser_fallback_url 確保如果跳轉失敗，還能用預設方式打開
+            window.location.href = `intent://${cleanUrl}#Intent;scheme=https;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+          } else if (isIOS) {
+            // iOS 系統：絕對「不要」用 e.preventDefault() 攔截！
+            // 讓網頁自然跳轉，iOS 才能觸發 Universal Links (通用連結) 機制，自動喚醒 LINE, IG, 蝦皮 APP。
+            // 註：若點擊的是沒有專屬 APP 的網站 (如 Hotcake)，Apple 限制無法強跳 Safari，會留在 IG 內建瀏覽器。
+            
+            // 僅針對在 LINE 瀏覽器內的情境加上參數輔助
+            if (isLineBrowser && !url.includes('openExternalBrowser')) {
+              e.preventDefault();
               window.location.href = url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
-            } else {
-              // iOS IG/FB 較難用代碼強制跳出，改用 window.open 嘗試開啟新分頁
-              window.open(url, '_blank') || (window.location.href = url);
             }
           }
         }
-        // 如果不是在內建瀏覽器，則什麼都不做，讓下方 HTML 的 <a target="_blank"> 自然運作
       };
 
       const links = [
@@ -140,7 +141,7 @@
         { name: 'Zoe', role: '美甲師', handle: '@manicurist.zoe', url: 'https://www.instagram.com/manicurist.zoe' }
       ];
 
-      // --- 獨立宣告樣式變數，避免 GitHub Pages 的 Jekyll 解析錯誤 ({{...}}) ---
+      // --- 獨立宣告樣式變數，避免 GitHub Pages 的 Jekyll 解析錯誤 ---
       const bgStyle = {
         background: 'linear-gradient(160deg, #fef6f7 0%, #f6b8c1 35%, #f0899b 70%, #eb687c 100%)',
         backgroundAttachment: 'fixed'
@@ -161,7 +162,7 @@
           className="min-h-screen relative py-12 px-4 flex justify-center text-gray-800 overflow-x-hidden"
           style={bgStyle}
         >
-          {/* 背景水彩暈染光暈，模擬筆刷的不均勻感 */}
+          {/* 背景水彩暈染光暈 */}
           <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
             <div className="absolute -top-10 left-[-10%] w-[120%] h-[40%] bg-white/60 blur-[60px] rounded-full"></div>
             <div className="absolute top-[30%] -right-[20%] w-[80%] h-[60%] bg-[#e35d76]/20 blur-[80px] rounded-full mix-blend-multiply"></div>
@@ -183,7 +184,7 @@
                 凝膠美甲 · 手足保養 · 教學 · 霧眉
               </p>
 
-              {/* 資訊卡片 (採用更通透的毛玻璃效果以搭配粉色背景) */}
+              {/* 資訊卡片 */}
               <div className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_0_rgba(235,104,124,0.2)] rounded-3xl p-6 w-full text-sm relative overflow-hidden group">
                 <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
                 
@@ -218,7 +219,6 @@
             {/* 主要連結區塊 */}
             <main className="flex flex-col gap-4">
               {links.map((link, index) => {
-                // 獨立宣告動畫延遲樣式
                 const delayStyle = { transitionDelay: `${index * 100}ms` };
                 return (
                   <a
