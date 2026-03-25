@@ -74,22 +74,33 @@
         setTimeout(() => setIsLoaded(true), 150);
       }, []);
 
-      // 處理 Deep Link 深度連結跳轉邏輯
-      const handleDeepLink = (e, url, deepLink) => {
-        if (!deepLink) return;
+      // 處理跳轉至外部瀏覽器邏輯 (Chrome / Safari)
+      const handleExternalClick = (e, url) => {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
         
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const isIgBrowser = /Instagram/i.test(navigator.userAgent);
-        
-        if (isMobile || isIgBrowser) {
-          e.preventDefault();
-          window.location.href = deepLink;
-          setTimeout(() => {
-            if (!document.hidden) {
-              window.location.href = url;
+        // 偵測是否為社群軟體的內建瀏覽器 (IG, FB, LINE)
+        const isInAppBrowser = /Instagram|FBAV|FBAN|Line/i.test(ua);
+        const isAndroid = /android/i.test(ua);
+
+        if (isInAppBrowser) {
+          e.preventDefault(); // 阻止原本的超連結點擊行為，準備接管
+          
+          if (isAndroid) {
+            // Android 系統：利用 intent 協議強制喚醒系統預設瀏覽器 (例如 Chrome)
+            const cleanUrl = url.replace(/^https?:\/\//, '');
+            window.location.href = `intent://${cleanUrl}#Intent;scheme=https;end`;
+          } else {
+            // iOS 系統處理
+            if (/Line/i.test(ua)) {
+              // LINE 專屬的外部瀏覽器參數
+              window.location.href = url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
+            } else {
+              // iOS IG/FB 較難用代碼強制跳出，改用 window.open 嘗試開啟新分頁
+              window.open(url, '_blank') || (window.location.href = url);
             }
-          }, 1500);
+          }
         }
+        // 如果不是在內建瀏覽器，則什麼都不做，讓下方 HTML 的 <a target="_blank"> 自然運作
       };
 
       const links = [
@@ -111,7 +122,6 @@
           title: '客製化穿戴甲專區',
           subtitle: '@y.n.nail',
           url: 'https://instagram.com/y.n.nail',
-          deepLink: 'instagram://user?username=y.n.nail',
           icon: <Instagram strokeWidth={1.5} className="w-6 h-6" />,
           primary: false,
         },
@@ -125,9 +135,9 @@
       ];
 
       const team = [
-        { name: '小羽 Yunnie', role: '闆娘 / 講師', handle: '@yunnie0905', url: 'https://www.instagram.com/yunnie0905', deepLink: 'instagram://user?username=yunnie0905'},
-        { name: 'Lin', role: '美甲師', handle: '@yulin0820_nail', url: 'https://www.instagram.com/yulin0820_nail', deepLink: 'instagram://user?username=yulin0820_nail'},
-        { name: 'Zoe', role: '美甲師', handle: '@manicurist.zoe', url: 'https://www.instagram.com/manicurist.zoe', deepLink: 'instagram://user?username=manicurist.zoe'}
+        { name: '小羽 Yunnie', role: '闆娘 / 講師', handle: '@yunnie0905', url: 'https://www.instagram.com/yunnie0905' },
+        { name: 'Lin', role: '美甲師', handle: '@yulin0820_nail', url: 'https://www.instagram.com/yulin0820_nail' },
+        { name: 'Zoe', role: '美甲師', handle: '@manicurist.zoe', url: 'https://www.instagram.com/manicurist.zoe' }
       ];
 
       // --- 獨立宣告樣式變數，避免 GitHub Pages 的 Jekyll 解析錯誤 ({{...}}) ---
@@ -191,6 +201,7 @@
                   </div>
                   <a 
                     href="https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓" 
+                    onClick={(e) => handleExternalClick(e, "https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓")}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center gap-4 bg-white/50 rounded-2xl p-3.5 border border-white/60 backdrop-blur-md transition-colors hover:bg-white/70 cursor-pointer group/map"
@@ -213,7 +224,7 @@
                   <a
                     key={index}
                     href={link.url}
-                    onClick={(e) => handleDeepLink(e, link.url, link.deepLink)}
+                    onClick={(e) => handleExternalClick(e, link.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`group relative flex items-center p-4 rounded-3xl transition-all duration-300 transform hover:-translate-y-1.5 
@@ -263,7 +274,7 @@
                   <a
                     key={index}
                     href={member.url}
-                    onClick={(e) => handleDeepLink(e, member.url, member.deepLink)}
+                    onClick={(e) => handleExternalClick(e, member.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 hover:border-white/90 rounded-2xl p-4 transition-all duration-300 group shadow-[0_4px_15px_rgba(235,104,124,0.1)]"
