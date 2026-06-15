@@ -4,43 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Yunnie Nail | 美甲美學</title>
-  
-  <!-- 載入 Tailwind CSS (排版與樣式) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 載入 Google 字體：新增了 Alex Brush 作為新的 Logo 字體 -->
   <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Noto+Sans+TC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
-  
-  <!-- 載入 React 與 ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
-  <!-- 載入 Babel (解析 JSX 代碼) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <style>
     body {
       margin: 0;
       font-family: 'Noto Sans TC', sans-serif;
       -webkit-tap-highlight-color: transparent;
-      background-color: #fceceb; /* 確保載入前有個底色 */
+      background-color: #fceceb;
     }
-    /* 隱藏滾動條但保留滾動功能 */
     ::-webkit-scrollbar {
-      width: 0px;
+      width: 0;
       background: transparent;
     }
   </style>
 </head>
 <body>
-  <!-- React 渲染容器 -->
   <div id="root"></div>
 
-  <!-- 應用程式邏輯 -->
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- SVG 圖示元件 ---
     const MessageCircle = ({ strokeWidth = 1.5, className = "w-6 h-6" }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
     );
@@ -65,19 +52,27 @@
     const Sparkles = ({ className = "w-3 h-3" }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
     );
+    const ReceiptText = ({ strokeWidth = 1.5, className = "w-6 h-6" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+    );
+    const ArrowLeft = ({ className = "w-5 h-5" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    );
 
     function App() {
       const [isLoaded, setIsLoaded] = useState(false);
+      const [view, setView] = useState('home');
 
       useEffect(() => {
-        // 延遲觸發進場動畫
         setTimeout(() => setIsLoaded(true), 150);
       }, []);
 
-      // 處理跳轉邏輯：因應 iOS / Android 不同的生態系限制
+      useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, [view]);
+
       const handleExternalClick = (e, url) => {
         const ua = navigator.userAgent || navigator.vendor || window.opera;
-        
         const isInAppBrowser = /Instagram|FBAV|FBAN/i.test(ua);
         const isLineBrowser = /Line/i.test(ua);
         const isAndroid = /android/i.test(ua);
@@ -85,21 +80,12 @@
 
         if (isInAppBrowser || isLineBrowser) {
           if (isAndroid) {
-            // Android 系統：利用 intent 協議完美跳脫。交給手機系統決定用 Chrome 還是 APP (LINE/蝦皮) 打開
-            e.preventDefault(); 
+            e.preventDefault();
             const cleanUrl = url.replace(/^https?:\/\//, '');
-            // 加上 S.browser_fallback_url 確保如果跳轉失敗，還能用預設方式打開
             window.location.href = `intent://${cleanUrl}#Intent;scheme=https;S.browser_fallback_url=${encodeURIComponent(url)};end`;
-          } else if (isIOS) {
-            // iOS 系統：絕對「不要」用 e.preventDefault() 攔截！
-            // 讓網頁自然跳轉，iOS 才能觸發 Universal Links (通用連結) 機制，自動喚醒 LINE, IG, 蝦皮 APP。
-            // 註：若點擊的是沒有專屬 APP 的網站 (如 Hotcake)，Apple 限制無法強跳 Safari，會留在 IG 內建瀏覽器。
-            
-            // 僅針對在 LINE 瀏覽器內的情境加上參數輔助
-            if (isLineBrowser && !url.includes('openExternalBrowser')) {
-              e.preventDefault();
-              window.location.href = url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
-            }
+          } else if (isIOS && isLineBrowser && !url.includes('openExternalBrowser')) {
+            e.preventDefault();
+            window.location.href = url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
           }
         }
       };
@@ -117,6 +103,13 @@
           subtitle: '24小時快速預約',
           url: 'https://tw.hotcakeapp.com/g/M6A2TX',
           icon: <CalendarHeart strokeWidth={1.5} className="w-6 h-6" />,
+          primary: true,
+        },
+        {
+          title: '服務價目表',
+          subtitle: '凝膠美甲 · 手足保養',
+          action: () => setView('price'),
+          icon: <ReceiptText strokeWidth={1.5} className="w-6 h-6" />,
           primary: true,
         },
         {
@@ -141,28 +134,283 @@
         { name: 'Zoe', role: '美甲師', handle: '@manicurist.zoe', url: 'https://www.instagram.com/manicurist.zoe' }
       ];
 
-      // --- 獨立宣告樣式變數，避免 GitHub Pages 的 Jekyll 解析錯誤 ---
+      const manicurePrices = [
+        { name: '精緻單色', manager: '手 $1000 / 足 $1100', artist: '手 $800 / 足 $900' },
+        { name: '貓眼', manager: '手 $1100 / 足 $1200', artist: '手 $900 / 足 $1000' },
+        { name: '鏡面', manager: '手 $1200 / 足 $1300', artist: '手 $1000 / 足 $1100' },
+        { name: '法式、漸層', manager: '手 $1300 / 足 $1400', artist: '手 $1100 / 足 $1200' },
+        { name: '設計款式', manager: '$1400 up', artist: '$1200 up' },
+      ];
+
+      const priceSections = [
+        {
+          title: '凝膠建甲',
+          rows: [
+            { name: '足部反式凝膠（全足部）', price: '$1200' },
+            { name: '足部反式凝膠（單指）', price: '$300-$800/指' },
+          ],
+        },
+        {
+          title: '凝膠修補',
+          rows: [
+            { name: '斷裂甲修補', price: '$50/指' },
+            { name: '補甲', price: '$100 up/指' },
+            { name: '補上層 Top', price: '$30/指' },
+          ],
+        },
+        {
+          title: '延甲',
+          rows: [
+            { name: '凝膠延甲（不接十指延甲）', price: '$150/指' },
+            { name: '甲片延長', price: '$150/指' },
+          ],
+        },
+        {
+          title: '卸甲',
+          rows: [
+            { name: '本店卸甲續作', price: '$200' },
+            { name: '本店卸甲不續作', price: '$400' },
+            { name: '他店卸甲續作', price: '$40/指' },
+            { name: '他店卸甲不續作', price: '$60/指' },
+          ],
+          note: '卸甲不續作，加購保養折扣 $100',
+        },
+      ];
+
+      const careRows = [
+        { name: '純修剪指甲（含修型）', price: '手 $200 / 足 $250' },
+        { name: '手部基礎保養 40 min', price: '$599', detail: '修型、甲面去角質、甘皮修整、甲面拋光、修護指緣油、保濕護手霜' },
+        { name: '足部基礎保養 40 min', price: '$699', detail: '足浴、修型、甲面去角質、甘皮修整、甲面拋光、修護指緣油、保濕乳液' },
+        { name: '竹炭深層保養 90 min', price: '$1099', detail: '足浴、基礎保養、深層去角質、除水腫敷膜、保濕乳液按摩、修護指緣油' },
+        { name: 'Trind 建甲敷膜保養', price: '$299', detail: '軟復指甲水分，保持指甲彈性及硬度，預防指甲斷裂' },
+        { name: '局部去角質保養 20 min', price: '$499' },
+        { name: '除足繭 40 min', price: '$500', detail: '足浴、去除腳後跟及腳底老廢角質、保濕乳液' },
+      ];
+
       const bgStyle = {
         background: 'linear-gradient(160deg, #fef6f7 0%, #f6b8c1 35%, #f0899b 70%, #eb687c 100%)',
         backgroundAttachment: 'fixed'
       };
 
-      const titleStyle = { 
-        fontFamily: "'Alex Brush', cursive", 
+      const titleStyle = {
+        fontFamily: "'Alex Brush', cursive",
         fontSize: 'clamp(3rem, 17vw, 5.5rem)',
-        textShadow: '0px 2px 15px rgba(235,104,124,0.4), 0px 4px 4px rgba(0,0,0,0.05)' 
+        textShadow: '0px 2px 15px rgba(235,104,124,0.4), 0px 4px 4px rgba(0,0,0,0.05)'
       };
 
-      const subtitleStyle = { 
-        textShadow: '0 1px 3px rgba(0,0,0,0.15)' 
+      const subtitleStyle = {
+        textShadow: '0 1px 3px rgba(0,0,0,0.15)'
       };
+
+      const LinkCard = ({ link, index }) => {
+        const delayStyle = { transitionDelay: `${index * 100}ms` };
+        const commonClass = `group relative flex items-center p-4 rounded-3xl transition-all duration-300 transform hover:-translate-y-1.5
+          ${link.primary
+            ? 'bg-white/80 hover:bg-white shadow-[0_8px_20px_rgba(235,104,124,0.25)] hover:shadow-[0_12px_25px_rgba(235,104,124,0.35)] border border-white'
+            : 'bg-white/50 hover:bg-white/80 shadow-[0_4px_15px_rgba(235,104,124,0.1)] border border-white/60 hover:border-white/90'
+          }
+          backdrop-blur-lg overflow-hidden`;
+
+        const content = (
+          <>
+            <div className={`p-3 rounded-2xl mr-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${link.primary ? 'bg-pink-100 text-pink-600 shadow-inner' : 'bg-white/90 text-gray-700'}`}>
+              {link.icon}
+            </div>
+            <div className="flex-1">
+              <h2 className="font-bold text-[15px] tracking-wide text-gray-800">{link.title}</h2>
+              {link.subtitle && <p className={`text-xs mt-1 font-medium tracking-wider ${link.primary ? 'text-pink-600' : 'text-gray-600'}`}>{link.subtitle}</p>}
+            </div>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-1 ${link.primary ? 'bg-pink-50' : 'bg-white/70'}`}>
+              <ChevronRight className={`w-5 h-5 ${link.primary ? 'text-pink-500' : 'text-gray-500'}`} />
+            </div>
+          </>
+        );
+
+        if (link.action) {
+          return <button key={index} type="button" onClick={link.action} className={`${commonClass} text-left w-full`} style={delayStyle}>{content}</button>;
+        }
+
+        return (
+          <a key={index} href={link.url} onClick={(e) => handleExternalClick(e, link.url)} target="_blank" rel="noopener noreferrer" className={commonClass} style={delayStyle}>
+            {content}
+          </a>
+        );
+      };
+
+      const SectionTitle = ({ children }) => (
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />
+          <h2 className="text-lg font-bold tracking-[0.12em] text-gray-800">{children}</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-pink-200 to-transparent"></div>
+        </div>
+      );
+
+      const PriceRow = ({ row }) => (
+        <div className="py-3 border-b border-pink-100/80 last:border-b-0">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[14px] font-medium leading-relaxed text-gray-800">{row.name}</p>
+              {row.detail && <p className="text-[11px] text-gray-500 leading-relaxed mt-1">{row.detail}</p>}
+            </div>
+            <p className="text-[15px] font-bold text-pink-700 whitespace-nowrap">{row.price}</p>
+          </div>
+        </div>
+      );
+
+      const PriceView = () => (
+        <>
+          <button
+            type="button"
+            onClick={() => setView('home')}
+            className="self-start inline-flex items-center gap-2 bg-white/60 hover:bg-white/80 border border-white/70 rounded-full px-4 py-2 text-sm font-bold text-pink-700 shadow-[0_4px_14px_rgba(235,104,124,0.18)] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回主選單
+          </button>
+
+          <header className="text-center px-2">
+            <h1 className="leading-none text-white tracking-normal drop-shadow-lg mb-2 whitespace-nowrap" style={titleStyle}>
+              Yunnie Nail
+            </h1>
+            <p className="text-white text-[13px] tracking-[0.35em] font-light drop-shadow-md" style={subtitleStyle}>
+              服務價目表
+            </p>
+          </header>
+
+          <section className="bg-white/80 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_0_rgba(235,104,124,0.2)] rounded-3xl p-5">
+            <SectionTitle>凝膠設計</SectionTitle>
+            <p className="text-xs text-gray-500 mb-4">含前置基礎保養</p>
+            {manicurePrices.map((row) => (
+              <div key={row.name} className="bg-white/70 border border-pink-100 rounded-2xl p-4 mb-3 last:mb-0 shadow-[0_4px_14px_rgba(235,104,124,0.08)]">
+                <h3 className="font-bold text-gray-800 text-[15px] tracking-wide mb-3">{row.name}</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-pink-50/90 rounded-2xl p-3 border border-pink-100">
+                    <p className="text-[11px] font-bold tracking-widest text-pink-700 mb-1">店長 / 設計總監</p>
+                    <p className="text-[14px] font-bold text-gray-800 leading-relaxed">{row.manager}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-3 border border-pink-100">
+                    <p className="text-[11px] font-bold tracking-widest text-pink-700 mb-1">專業美甲師</p>
+                    <p className="text-[14px] font-bold text-gray-800 leading-relaxed">{row.artist}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section className="bg-white/78 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_0_rgba(235,104,124,0.16)] rounded-3xl p-5">
+            {priceSections.map((section) => (
+              <div key={section.title} className="mb-6 last:mb-0">
+                <SectionTitle>{section.title}</SectionTitle>
+                {section.rows.map((row) => <PriceRow key={row.name} row={row} />)}
+                {section.note && <p className="text-[11px] text-gray-500 mt-3">{section.note}</p>}
+              </div>
+            ))}
+          </section>
+
+          <section className="bg-white/78 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_0_rgba(235,104,124,0.16)] rounded-3xl p-5">
+            <SectionTitle>手足保養</SectionTitle>
+            {careRows.map((row) => <PriceRow key={row.name} row={row} />)}
+          </section>
+
+          <a
+            href="https://lin.ee/bqGxA8o"
+            onClick={(e) => handleExternalClick(e, 'https://lin.ee/bqGxA8o')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 bg-white text-pink-700 rounded-3xl p-4 font-bold shadow-[0_8px_24px_rgba(235,104,124,0.28)] border border-white"
+          >
+            <MessageCircle className="w-5 h-5" />
+            透過 LINE 預約 / 詢問價格
+          </a>
+        </>
+      );
+
+      const HomeView = () => (
+        <>
+          <header className="flex flex-col items-center text-center mt-6 w-full px-2">
+            <h1 className="leading-none text-white tracking-normal drop-shadow-lg mb-2 whitespace-nowrap" style={titleStyle}>
+              Yunnie Nail
+            </h1>
+            <p className="text-white text-[13px] tracking-[0.35em] font-light drop-shadow-md mb-8 ml-1" style={subtitleStyle}>
+              凝膠美甲 · 手足保養 · 教學
+            </p>
+
+            <div className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_0_rgba(235,104,124,0.2)] rounded-3xl p-6 w-full text-sm relative overflow-hidden group">
+              <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
+              <p className="mb-5 text-gray-800 font-normal leading-relaxed text-center tracking-wide">
+                歡迎來到專屬服務選單 🤍<br/>
+                提供 <span className="font-medium text-pink-700">美甲線上預約</span> · <span className="font-medium text-pink-700">穿戴甲訂製</span> · <span className="font-medium text-pink-700">商品選購</span>
+              </p>
+              <div className="flex flex-col gap-3 text-left">
+                <a
+                  href="https://lin.ee/bqGxA8o"
+                  onClick={(e) => handleExternalClick(e, "https://lin.ee/bqGxA8o")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 bg-white/50 rounded-2xl p-3.5 border border-white/60 backdrop-blur-md transition-colors hover:bg-white/70 cursor-pointer group/time"
+                >
+                  <div className="bg-pink-100 p-2 rounded-full shadow-sm">
+                    <Clock strokeWidth={2} className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <span className="text-[13px] text-gray-800 tracking-wide font-medium group-hover/time:text-pink-700 transition-colors duration-300">營業時間 11:00 - 20:00 <span className="text-pink-700/80 text-xs ml-1">(預約制)</span></span>
+                </a>
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓"
+                  onClick={(e) => handleExternalClick(e, "https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 bg-white/50 rounded-2xl p-3.5 border border-white/60 backdrop-blur-md transition-colors hover:bg-white/70 cursor-pointer group/map"
+                >
+                  <div className="bg-pink-100 p-2 rounded-full shadow-sm group-hover/map:scale-110 transition-transform duration-300">
+                    <MapPin strokeWidth={2} className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <span className="text-[13px] text-gray-800 tracking-wide font-medium group-hover/map:text-pink-700 transition-colors duration-300">高雄市新興區民族二路97號11樓</span>
+                </a>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex flex-col gap-4">
+            {links.map((link, index) => <LinkCard key={link.title} link={link} index={index} />)}
+          </main>
+
+          <section className="mt-2">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="h-[1px] bg-gradient-to-r from-transparent to-white/60 flex-1"></div>
+              <Sparkles className="w-3 h-3 text-white" />
+              <span className="text-white text-xs font-bold tracking-[0.2em] drop-shadow-sm">ARTIST TEAM</span>
+              <Sparkles className="w-3 h-3 text-white" />
+              <div className="h-[1px] bg-gradient-to-l from-transparent to-white/60 flex-1"></div>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {team.map((member) => (
+                <a
+                  key={member.handle}
+                  href={member.url}
+                  onClick={(e) => handleExternalClick(e, member.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 hover:border-white/90 rounded-2xl p-4 transition-all duration-300 group shadow-[0_4px_15px_rgba(235,104,124,0.1)]"
+                >
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-bold text-gray-800 text-[15px]">{member.name}</span>
+                    <span className="text-xs text-pink-700 font-bold tracking-widest">{member.role}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700 group-hover:text-pink-600 transition-colors">
+                    <span className="text-xs font-medium tracking-wider">{member.handle}</span>
+                    <div className="bg-white/80 p-1.5 rounded-full group-hover:bg-pink-100 group-hover:shadow-[0_0_10px_rgba(244,114,182,0.4)] transition-all duration-300">
+                      <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        </>
+      );
 
       return (
-        <div 
-          className="min-h-screen relative py-12 px-4 flex justify-center text-gray-800 overflow-x-hidden"
-          style={bgStyle}
-        >
-          {/* 背景水彩暈染光暈 */}
+        <div className="min-h-screen relative py-12 px-4 flex justify-center text-gray-800 overflow-x-hidden" style={bgStyle}>
           <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
             <div className="absolute -top-10 left-[-10%] w-[120%] h-[40%] bg-white/60 blur-[60px] rounded-full"></div>
             <div className="absolute top-[30%] -right-[20%] w-[80%] h-[60%] bg-[#e35d76]/20 blur-[80px] rounded-full mix-blend-multiply"></div>
@@ -170,143 +418,18 @@
           </div>
 
           <div className={`w-full max-w-md relative z-10 flex flex-col gap-8 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            
-            {/* Header 品牌視覺區塊 */}
-            <header className="flex flex-col items-center text-center mt-6 w-full px-2">
-              <h1 
-                className="leading-none text-white tracking-normal drop-shadow-lg mb-2 whitespace-nowrap"
-                style={titleStyle}
-              >
-                Yunnie Nail
-              </h1>
-              
-              <p className="text-white text-[13px] tracking-[0.35em] font-light drop-shadow-md mb-8 ml-1" style={subtitleStyle}>
-                凝膠美甲 · 手足保養 · 教學 · 霧眉
-              </p>
+            {view === 'home' ? <HomeView /> : <PriceView />}
 
-              {/* 資訊卡片 */}
-              <div className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_0_rgba(235,104,124,0.2)] rounded-3xl p-6 w-full text-sm relative overflow-hidden group">
-                <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out"></div>
-                
-                <p className="mb-5 text-gray-800 font-normal leading-relaxed text-center tracking-wide">
-                  歡迎來到專屬服務選單 🤍<br/>
-                  提供 <span className="font-medium text-pink-700">美甲線上預約</span> · <span className="font-medium text-pink-700">穿戴甲訂製</span> · <span className="font-medium text-pink-700">商品選購</span>
-                </p>
-                
-                <div className="flex flex-col gap-3 text-left">
-                  <div className="flex items-center gap-4 bg-white/50 rounded-2xl p-3.5 border border-white/60 backdrop-blur-md transition-colors hover:bg-white/70">
-                    <div className="bg-pink-100 p-2 rounded-full shadow-sm">
-                      <Clock strokeWidth={2} className="w-4 h-4 text-pink-600" />
-                    </div>
-                    <span className="text-[13px] text-gray-800 tracking-wide font-medium">營業時間 11:00 - 20:00 <span className="text-pink-700/80 text-xs ml-1">(預約制)</span></span>
-                  </div>
-                  <a 
-                    href="https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓" 
-                    onClick={(e) => handleExternalClick(e, "https://www.google.com/maps/search/?api=1&query=高雄市新興區民族二路97號11樓")}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-4 bg-white/50 rounded-2xl p-3.5 border border-white/60 backdrop-blur-md transition-colors hover:bg-white/70 cursor-pointer group/map"
-                  >
-                    <div className="bg-pink-100 p-2 rounded-full shadow-sm group-hover/map:scale-110 transition-transform duration-300">
-                      <MapPin strokeWidth={2} className="w-4 h-4 text-pink-600" />
-                    </div>
-                    <span className="text-[13px] text-gray-800 tracking-wide font-medium group-hover/map:text-pink-700 transition-colors duration-300">高雄市新興區民族二路97號11樓</span>
-                  </a>
-                </div>
-              </div>
-            </header>
-
-            {/* 主要連結區塊 */}
-            <main className="flex flex-col gap-4">
-              {links.map((link, index) => {
-                const delayStyle = { transitionDelay: `${index * 100}ms` };
-                return (
-                  <a
-                    key={index}
-                    href={link.url}
-                    onClick={(e) => handleExternalClick(e, link.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`group relative flex items-center p-4 rounded-3xl transition-all duration-300 transform hover:-translate-y-1.5 
-                      ${link.primary 
-                        ? 'bg-white/80 hover:bg-white shadow-[0_8px_20px_rgba(235,104,124,0.25)] hover:shadow-[0_12px_25px_rgba(235,104,124,0.35)] border border-white' 
-                        : 'bg-white/50 hover:bg-white/80 shadow-[0_4px_15px_rgba(235,104,124,0.1)] border border-white/60 hover:border-white/90'
-                      }
-                      backdrop-blur-lg overflow-hidden
-                    `}
-                    style={delayStyle}
-                  >
-                    <div className={`p-3 rounded-2xl mr-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3
-                      ${link.primary ? 'bg-pink-100 text-pink-600 shadow-inner' : 'bg-white/90 text-gray-700'}
-                    `}>
-                      {link.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h2 className={`font-bold text-[15px] tracking-wide ${link.primary ? 'text-gray-800' : 'text-gray-800'}`}>
-                        {link.title}
-                      </h2>
-                      {link.subtitle && (
-                        <p className={`text-xs mt-1 font-medium tracking-wider ${link.primary ? 'text-pink-600' : 'text-gray-600'}`}>
-                          {link.subtitle}
-                        </p>
-                      )}
-                    </div>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-1 ${link.primary ? 'bg-pink-50' : 'bg-white/70'}`}>
-                      <ChevronRight className={`w-5 h-5 ${link.primary ? 'text-pink-500' : 'text-gray-500'}`} />
-                    </div>
-                  </a>
-                );
-              })}
-            </main>
-
-            {/* 團隊介紹區塊 */}
-            <section className="mt-2">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="h-[1px] bg-gradient-to-r from-transparent to-white/60 flex-1"></div>
-                <Sparkles className="w-3 h-3 text-white" />
-                <span className="text-white text-xs font-bold tracking-[0.2em] drop-shadow-sm">ARTIST TEAM</span>
-                <Sparkles className="w-3 h-3 text-white" />
-                <div className="h-[1px] bg-gradient-to-l from-transparent to-white/60 flex-1"></div>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-3">
-                {team.map((member, index) => (
-                  <a
-                    key={index}
-                    href={member.url}
-                    onClick={(e) => handleExternalClick(e, member.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 hover:border-white/90 rounded-2xl p-4 transition-all duration-300 group shadow-[0_4px_15px_rgba(235,104,124,0.1)]"
-                  >
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-bold text-gray-800 text-[15px]">{member.name}</span>
-                      <span className="text-xs text-pink-700 font-bold tracking-widest">{member.role}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700 group-hover:text-pink-600 transition-colors">
-                      <span className="text-xs font-medium tracking-wider">{member.handle}</span>
-                      <div className="bg-white/80 p-1.5 rounded-full group-hover:bg-pink-100 group-hover:shadow-[0_0_10px_rgba(244,114,182,0.4)] transition-all duration-300">
-                        <Instagram className="w-3.5 h-3.5 text-pink-600" />
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </section>
-
-            {/* Footer */}
             <footer className="text-center mt-4 mb-6">
               <p className="text-white/80 text-[10px] font-medium tracking-widest uppercase drop-shadow-sm">
                 © {new Date().getFullYear()} Yunnie Nail All Rights Reserved.
               </p>
             </footer>
-
           </div>
         </div>
       );
     }
 
-    // 啟動 React 應用程式
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
